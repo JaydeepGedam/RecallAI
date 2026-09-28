@@ -68,9 +68,34 @@ export interface MemoryStats {
   conversations_count: number;
 }
 
+export interface LineageItem {
+  id: string;
+  content: string;
+  memory_type: MemoryType;
+  status: MemoryStatus;
+  created_at: string;
+  importance_score: number;
+  confidence_score: number;
+  is_current: boolean;
+}
+
+export interface MemoryLineageResponse {
+  memory_id: string;
+  chain: LineageItem[];
+}
+
+export interface ChatResponse {
+  conversation_id: string;
+  message: string;
+  retrieved_memories: ScoredMemory[];
+  extracted_memories: Memory[];
+  action_notes: string[];
+}
+
 export interface HealthStatus {
   status: string;
   version: string;
   environment: string;
   database: string;
 }
+
