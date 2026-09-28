@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: recallai_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: recallai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recallai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: recallai_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/recallai
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-recallai_docker_secret_key_123}
+      - ENVIRONMENT=production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: recallai_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  pgdata:
