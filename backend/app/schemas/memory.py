@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from app.models.memory import MemoryType, MemoryStatus
 
@@ -40,6 +40,11 @@ class MemoryResponse(MemoryBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MemoryListResponse(BaseModel):
+    total: int
+    memories: List[MemoryResponse]
+
+
 class MemorySearchRequest(BaseModel):
     user_id: str
     query: str
@@ -50,3 +55,55 @@ class ScoredMemoryResponse(MemoryResponse):
     semantic_similarity: float = Field(default=0.0)
     recency_score: float = Field(default=0.0)
     final_score: float = Field(default=0.0)
+
+
+class MemoryExtractRequest(BaseModel):
+    user_id: str
+    text: str
+    conversation_id: Optional[str] = None
+    auto_store: bool = Field(default=True, description="Whether to immediately store the extracted memories")
+
+
+class MemoryExtractResponse(BaseModel):
+    memories: List[MemoryResponse]
+    notes: List[str] = Field(default_factory=list)
+
+
+class LineageItem(BaseModel):
+    id: str
+    content: str
+    memory_type: str
+    status: str
+    created_at: str
+    importance_score: float
+    confidence_score: float
+    is_current: bool
+
+
+class MemoryLineageResponse(BaseModel):
+    memory_id: str
+    chain: List[LineageItem]
+
+
+class UserStatsResponse(BaseModel):
+    user_id: str
+    total: int
+    active: int
+    superseded: int
+    expired: int
+    conversations_count: int
+
+
+class ChatRequest(BaseModel):
+    user_id: str
+    conversation_id: Optional[str] = None
+    message: str
+    auto_extract: bool = Field(default=True, description="Automatically extract and save new memories from this interaction")
+
+
+class ChatResponse(BaseModel):
+    conversation_id: str
+    message: str
+    retrieved_memories: List[ScoredMemoryResponse] = Field(default_factory=list)
+    extracted_memories: List[MemoryResponse] = Field(default_factory=list)
+    action_notes: List[str] = Field(default_factory=list)
