@@ -5,18 +5,25 @@ import {
   Plus, 
   Trash2, 
   History, 
-  Tag
+  Tag,
+  Sparkles,
+  Inbox,
+  Database,
+  CheckCircle2
 } from 'lucide-react';
-import { memoriesApi } from '../services/api';
+import { memoriesApi, demoApi } from '../services/api';
 import { Memory, MemoryType, MemoryStatus } from '../types';
 import CreateMemoryModal from '../components/CreateMemoryModal';
 import MemoryLineageModal from '../components/MemoryLineageModal';
+import { useAuth } from '../context/AuthContext';
 
 export default function Memories() {
-  const userId = localStorage.getItem('recallai_user_id') || '56f3c1ec-1d26-4413-91f3-b0d1f549c470';
+  const { user } = useAuth();
+  const userId = user?.id || '';
   const [memories, setMemories] = useState<Memory[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [seeding, setSeeding] = useState(false);
   
   // Filter state
   const [search, setSearch] = useState<string>('');
@@ -28,6 +35,7 @@ export default function Memories() {
   const [selectedLineageId, setSelectedLineageId] = useState<string | null>(null);
 
   const fetchMemories = () => {
+    if (!userId) return;
     setLoading(true);
     memoriesApi.list({
       user_id: userId,
@@ -63,14 +71,25 @@ export default function Memories() {
     }
   };
 
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      await demoApi.seed();
+      fetchMemories();
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const activeCount = memories.filter(m => m.status === 'active').length;
+  const supersededCount = memories.filter(m => m.status === 'superseded').length;
+
   const getTypeBadgeColor = (type: MemoryType) => {
     switch (type) {
       case 'preference': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
       case 'skill': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'project': return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
       case 'goal': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'event': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'temporary': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
       default: return 'bg-slate-800 text-slate-300 border-slate-700';
     }
   };
@@ -90,23 +109,58 @@ export default function Memories() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header & Actions */}
+      {/* Header & Quick Add */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Memories Bank
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Search, filter, inspect provenance, and manage structured memory units.
+            Structured knowledge units stored exclusively for <span className="text-indigo-300 font-semibold">{user?.name || 'your profile'}</span>.
           </p>
         </div>
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Memory
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Custom Memory
+          </button>
+        </div>
+      </div>
+
+      {/* Top 3 KPI Stat Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="p-4 rounded-xl bg-[#141b2d] border border-slate-800/80 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-mono uppercase text-slate-400">Total Memories</div>
+            <div className="text-2xl font-bold text-white font-mono mt-0.5">{loading ? '...' : total}</div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <Database className="w-4 h-4" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#141b2d] border border-slate-800/80 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-mono uppercase text-emerald-400">Active Memories</div>
+            <div className="text-2xl font-bold text-emerald-400 font-mono mt-0.5">{loading ? '...' : activeCount}</div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#141b2d] border border-slate-800/80 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-mono uppercase text-amber-400">Superseded / History</div>
+            <div className="text-2xl font-bold text-amber-400 font-mono mt-0.5">{loading ? '...' : supersededCount}</div>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <History className="w-4 h-4" />
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -117,7 +171,7 @@ export default function Memories() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search memory content..."
+            placeholder="Search memory content (e.g. 'FastAPI', 'WhatsApp', 'books')..."
             className="w-full bg-[#141b2d] border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </form>
@@ -132,13 +186,10 @@ export default function Memories() {
               className="bg-[#141b2d] border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 font-mono w-full md:w-auto"
             >
               <option value="all">All Types</option>
-              <option value="fact">fact</option>
-              <option value="preference">preference</option>
-              <option value="skill">skill</option>
-              <option value="project">project</option>
-              <option value="goal">goal</option>
-              <option value="event">event</option>
-              <option value="temporary">temporary</option>
+              <option value="preference">Preference</option>
+              <option value="skill">Skill / Stack</option>
+              <option value="project">Project</option>
+              <option value="fact">Fact</option>
             </select>
           </div>
 
@@ -153,8 +204,6 @@ export default function Memories() {
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
               <option value="superseded">Superseded</option>
-              <option value="expired">Expired</option>
-              <option value="deleted">Deleted</option>
             </select>
           </div>
         </div>
@@ -166,8 +215,8 @@ export default function Memories() {
           <table className="w-full text-left text-xs">
             <thead className="bg-[#141b2d] text-slate-400 uppercase font-mono tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Memory Content</th>
-                <th className="py-3 px-4">Type</th>
+                <th className="py-3 px-4">Memory Statement</th>
+                <th className="py-3 px-4">Category</th>
                 <th className="py-3 px-4">Importance</th>
                 <th className="py-3 px-4">Confidence</th>
                 <th className="py-3 px-4">Status</th>
@@ -184,8 +233,32 @@ export default function Memories() {
                 </tr>
               ) : memories.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-mono">
-                    No memories match the current filters.
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="max-w-sm mx-auto flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
+                        <Inbox className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-slate-200">No memories found</h3>
+                      <p className="text-xs text-slate-400 mt-1 mb-4">
+                        This user partition is clean. You can add a memory manually, have a conversation in Chat, or seed demo benchmark records.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setIsCreateOpen(true)}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium"
+                        >
+                          Add Custom Memory
+                        </button>
+                        <button
+                          onClick={handleSeed}
+                          disabled={seeding}
+                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700/60 flex items-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                          {seeding ? 'Seeding...' : 'Seed Benchmark Memories'}
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -269,8 +342,8 @@ export default function Memories() {
 
         {/* Footer info */}
         <div className="p-4 border-t border-slate-800/80 bg-[#0c101a] flex items-center justify-between text-xs text-slate-400 font-mono">
-          <span>Showing {memories.length} of {total} stored memories</span>
-          <span>Tenant: {userId.slice(0, 8)}...</span>
+          <span>Showing {memories.length} memories</span>
+          <span>User: {user?.email}</span>
         </div>
       </div>
 

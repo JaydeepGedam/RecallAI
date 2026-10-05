@@ -1,7 +1,11 @@
 import json
+from pathlib import Path
 from typing import List, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ROOT_DIR = Path(__file__).resolve().parents[3]
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -55,7 +59,7 @@ class Settings(BaseSettings):
     CONFLICT_SIMILARITY_THRESHOLD: float = 0.65
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[str(_ROOT_DIR / ".env"), str(_BACKEND_DIR / ".env"), ".env"],
         env_file_encoding="utf-8",
         extra="ignore"
     )

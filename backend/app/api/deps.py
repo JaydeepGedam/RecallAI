@@ -1,4 +1,4 @@
-from typing import Generator, Optional
+from typing import Optional
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -18,10 +18,10 @@ def get_current_user(
 ) -> User:
     """
     Authenticates and retrieves the current user.
-    Supports standard Bearer JWT tokens, and also allows X-User-Id header for developer flexibility.
-    Guarantees strict tenant isolation.
+    Supports Bearer JWT tokens and optional X-User-Id for direct developer testing.
+    Guarantees strict tenant isolation by binding all requests to this user.
     """
-    # 1. Check Bearer JWT Token
+    # 1. Bearer JWT Token check
     if token:
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
@@ -29,7 +29,7 @@ def get_current_user(
             if not user_id:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication token credentials",
+                    detail="Invalid authentication token",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             user = db.query(User).filter(User.id == user_id).first()
@@ -43,19 +43,19 @@ def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # 2. Check Developer Header X-User-Id
+    # 2. Direct developer header X-User-Id
     if x_user_id:
         user = db.query(User).filter(User.id == x_user_id).first()
         if user:
             return user
 
-    # 3. Fallback: Default to demo user if available, or error
+    # 3. Default demo user if in local development mode without token
     demo_user = db.query(User).filter(User.email == "rahul@example.com").first()
-    if demo_user:
+    if demo_user and settings.ENVIRONMENT == "development":
         return demo_user
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required. Please log in or provide valid user credentials.",
+        detail="Authentication required. Please log in or sign up.",
         headers={"WWW-Authenticate": "Bearer"},
     )

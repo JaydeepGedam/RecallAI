@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_user
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.conversation import Conversation
@@ -14,22 +14,16 @@ router = APIRouter(prefix="/demo", tags=["Demo & Seeding"])
 
 
 @router.post("/seed", response_model=StandardResponse)
-def seed_demo_data(db: Session = Depends(get_db)):
+def seed_demo_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
-    Seeds demo user 'Rahul' with realistic memories across all types and statuses,
+    Seeds the authenticated user with realistic memories across all types and statuses,
     including an example superseded memory to demonstrate conflict lineage.
     """
-    # 1. Get or create demo user Rahul
-    user = db.query(User).filter(User.email == "rahul@example.com").first()
-    if not user:
-        user = User(
-            email="rahul@example.com",
-            name="Rahul",
-            hashed_password=get_password_hash("password123")
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    # 1. Use currently authenticated user
+    user = current_user
 
     # 2. Get or create a sample conversation
     conv = db.query(Conversation).filter(Conversation.user_id == user.id).first()
@@ -183,12 +177,15 @@ def seed_demo_data(db: Session = Depends(get_db)):
 
 
 @router.post("/reset", response_model=StandardResponse)
-def reset_demo_data(db: Session = Depends(get_db)):
-    """Resets memories and conversations for user Rahul for a clean test run."""
-    user = db.query(User).filter(User.email == "rahul@example.com").first()
+def reset_demo_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Resets memories and conversations for the current user for a clean test run."""
+    user = current_user
     if user:
         db.query(Memory).filter(Memory.user_id == user.id).delete()
         db.query(Message).filter(Message.conversation.has(user_id=user.id)).delete()
         db.query(Conversation).filter(Conversation.user_id == user.id).delete()
         db.commit()
-    return StandardResponse(success=True, message="Reset demo data completed.")
+    return StandardResponse(success=True, message=f"Reset demo data completed for {user.name or user.email}.")

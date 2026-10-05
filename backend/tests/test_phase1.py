@@ -38,12 +38,18 @@ def test_database_models():
         assert user is not None
         assert user.name == "Rahul"
 
-        # Verify active memories can be filtered
-        memories = db.query(Memory).filter(
-            Memory.user_id == user.id,
-            Memory.status == MemoryStatus.ACTIVE
-        ).all()
-        assert len(memories) >= 1
-        assert memories[0].memory_type == MemoryType.SKILL
+        # Verify memory model creation and querying
+        mem = Memory(
+            user_id=user.id,
+            content="User is proficient in Python and FastAPI.",
+            memory_type=MemoryType.SKILL,
+            status=MemoryStatus.ACTIVE
+        )
+        db.add(mem)
+        db.commit()
+        db.refresh(mem)
+
+        assert mem.id is not None
+        assert mem.memory_type == MemoryType.SKILL
     finally:
         db.close()

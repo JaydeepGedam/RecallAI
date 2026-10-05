@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Generator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
@@ -7,11 +8,17 @@ from app.db.base import Base
 
 # Database connection configuration
 connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+db_url = settings.DATABASE_URL
+if db_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
+    # Ensure relative SQLite path always resolves to the project root recallai.db
+    if db_url.startswith("sqlite:///./"):
+        root_dir = Path(__file__).resolve().parents[3]
+        canonical_db = root_dir / "recallai.db"
+        db_url = f"sqlite:///{canonical_db.as_posix()}"
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     connect_args=connect_args,
     pool_pre_ping=True
 )

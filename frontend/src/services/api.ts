@@ -21,10 +21,10 @@ const api = axios.create({
   },
 });
 
-// Interceptor to attach active tenant / user ID
+// Interceptor to attach active auth token & user ID
 api.interceptors.request.use((config) => {
-  const currentUserId = localStorage.getItem('recallai_user_id') || '56f3c1ec-1d26-4413-91f3-b0d1f549c470'; // default demo Rahul
   const token = localStorage.getItem('recallai_token');
+  const currentUserId = localStorage.getItem('recallai_user_id');
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -34,6 +34,24 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor to handle session expiration
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 && 
+      !window.location.pathname.includes('/login') && 
+      !window.location.pathname.includes('/signup')
+    ) {
+      localStorage.removeItem('recallai_token');
+      localStorage.removeItem('recallai_user_id');
+      localStorage.removeItem('recallai_user_name');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authApi = {
   getUsers: async (): Promise<User[]> => {
@@ -56,6 +74,10 @@ export const authApi = {
       localStorage.setItem('recallai_user_id', res.data.user.id);
       localStorage.setItem('recallai_user_name', res.data.user.name);
     }
+    return res.data;
+  },
+  getMe: async (): Promise<User> => {
+    const res = await api.get<User>('/auth/me');
     return res.data;
   }
 };

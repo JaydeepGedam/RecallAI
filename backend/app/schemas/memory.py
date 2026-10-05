@@ -12,9 +12,10 @@ class MemoryBase(BaseModel):
 
 
 class MemoryCreate(MemoryBase):
-    user_id: str
+    user_id: Optional[str] = None
     source_message_id: Optional[str] = None
     expires_at: Optional[datetime] = None
+
 
 
 class MemoryUpdate(BaseModel):
@@ -46,7 +47,7 @@ class MemoryListResponse(BaseModel):
 
 
 class MemorySearchRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     query: str
     limit: int = Field(default=5, ge=1, le=50)
 
@@ -58,7 +59,7 @@ class ScoredMemoryResponse(MemoryResponse):
 
 
 class MemoryExtractRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     text: str
     conversation_id: Optional[str] = None
     auto_store: bool = Field(default=True, description="Whether to immediately store the extracted memories")
@@ -95,10 +96,11 @@ class UserStatsResponse(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     conversation_id: Optional[str] = None
     message: str
     auto_extract: bool = Field(default=True, description="Automatically extract and save new memories from this interaction")
+
 
 
 class ChatResponse(BaseModel):

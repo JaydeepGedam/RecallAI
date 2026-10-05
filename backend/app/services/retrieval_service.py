@@ -1,8 +1,8 @@
 import math
+import re
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from app.core.config import settings
 from app.core.logging import logger
 from app.models.memory import Memory, MemoryStatus
@@ -26,15 +26,11 @@ class RetrievalService:
         """
         Calculates mathematical exponential decay score between 0.0 and 1.0.
         Formula: score = exp(- ln(2) * delta_days / half_life_days)
-        - At delta_days = 0: score = 1.0
-        - At delta_days = half_life_days (e.g. 30): score = 0.5
-        - As delta_days -> infinity: score -> 0.0
         """
         if not last_accessed_at:
             return 0.5
 
         now = datetime.now(timezone.utc)
-        # Ensure timezone compatibility
         if last_accessed_at.tzinfo is None:
             last_accessed_at = last_accessed_at.replace(tzinfo=timezone.utc)
 
@@ -55,7 +51,7 @@ class RetrievalService:
     ) -> List[Tuple[Memory, Dict[str, float]]]:
         """
         Performs semantic vector search and multi-factor ranking.
-        Returns a list of tuples: (Memory, {"semantic": float, "recency": float, "final": float})
+        Only returns memories that demonstrate genuine relevance to the query.
         """
         logger.info(f"Retrieving memories for user={user_id} with query='{query[:50]}...'")
 
@@ -70,7 +66,6 @@ class RetrievalService:
         )
 
         candidates = candidates_query.all()
-        # Filter out expired memories
         valid_candidates = []
         for mem in candidates:
             if mem.expires_at:
@@ -86,6 +81,9 @@ class RetrievalService:
             return []
 
         # Step 3: Compute scores and rank candidates
+        stop_words = {"the", "and", "for", "with", "this", "that", "you", "are", "what", "how", "can", "tell", "using", "user"}
+        q_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', query.lower())) - stop_words
+
         scored_results = []
         for mem in valid_candidates:
             # Semantic similarity
@@ -99,9 +97,17 @@ class RetrievalService:
 
             similarity = 0.0
             if mem_vector:
-                similarity = embedding_service.cosine_similarity(query_vector, mem_vector)
-                # Map negative cosine similarity to [0, 1] range for normalized combination
-                similarity = max(0.0, min(1.0, (similarity + 1.0) / 2.0))
+                raw_sim = embedding_service.cosine_similarity(query_vector, mem_vector)
+                # Real non-negative similarity
+                similarity = max(0.0, min(1.0, float(raw_sim)))
+
+            m_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', mem.content.lower())) - stop_words
+            has_keyword_overlap = bool(q_words & m_words)
+
+            # Relevance Gate: Ensure the memory actually pertains to the query topic.
+            # Avoids pulling unrelated memories (e.g. notifications when discussing football).
+            if similarity < 0.18 and not has_keyword_overlap:
+                continue
 
             # Recency score
             recency = self.calculate_recency_score(mem.last_accessed_at or mem.created_at)
@@ -110,7 +116,7 @@ class RetrievalService:
             importance = float(mem.importance_score or 0.5)
             confidence = float(mem.confidence_score or 0.9)
 
-            # Heuristic multi-factor ranking formula
+            # 4-factor ranking formula
             final_score = (
                 (similarity * self.w_semantic) +
                 (importance * self.w_importance) +

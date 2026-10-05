@@ -31,27 +31,17 @@ def create_memory(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Creates a new memory unit.
+    Creates a new memory unit strictly bound to the authenticated user.
     Automatically executes duplicate detection and conflict resolution.
-    Strictly isolated to current user or specified user_id.
     """
-    # Enforce user isolation: current user can only create memories for themselves
-    # unless using demo admin
-    effective_user_id = memory_in.user_id or current_user.id
-    if current_user.id != effective_user_id and current_user.email != "rahul@example.com":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot create memories for another user."
-        )
-
-    memory_in.user_id = effective_user_id
+    memory_in.user_id = current_user.id
     memory, _ = memory_service.create_memory(db, memory_in)
     return MemoryResponse.model_validate(memory)
 
 
 @router.get("", response_model=MemoryListResponse)
 def list_memories(
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    user_id: Optional[str] = Query(None, description="Optional user ID; defaults to current user"),
     memory_type: Optional[MemoryType] = Query(None, description="Filter by memory type"),
     status_filter: Optional[MemoryStatus] = Query(None, alias="status", description="Filter by status"),
     search: Optional[str] = Query(None, description="Search memory content"),
@@ -61,11 +51,10 @@ def list_memories(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Lists memories for the specified user with flexible filters and pagination.
+    Lists memories for the logged-in user with flexible filters and pagination.
     """
-    target_user_id = user_id or current_user.id
-    # Authorization check
-    if current_user.id != target_user_id and current_user.email != "rahul@example.com":
+    target_user_id = current_user.id
+    if user_id and user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other user memories is denied.")
 
     memories, total = memory_service.list_memories(
@@ -91,13 +80,13 @@ def get_memory_details(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Retrieves a single memory by ID with tenant isolation verification.
+    Retrieves a single memory by ID with strict user isolation verification.
     """
     memory = memory_service.get_memory(db, memory_id)
     if not memory:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found.")
 
-    if memory.user_id != current_user.id and current_user.email != "rahul@example.com":
+    if memory.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
     return MemoryResponse.model_validate(memory)
@@ -111,14 +100,13 @@ def update_memory(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Updates memory fields (content, scores, status, type).
-    Re-generates vector embedding if content is altered.
+    Updates memory fields.
     """
     memory = memory_service.get_memory(db, memory_id)
     if not memory:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found.")
 
-    if memory.user_id != current_user.id and current_user.email != "rahul@example.com":
+    if memory.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
     updated = memory_service.update_memory(db, memory, update_in)
@@ -139,7 +127,7 @@ def delete_memory(
     if not memory:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found.")
 
-    if memory.user_id != current_user.id and current_user.email != "rahul@example.com":
+    if memory.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
     memory_service.delete_memory(db, memory, hard_delete=hard_delete)
@@ -159,7 +147,7 @@ def get_memory_lineage(
     if not memory:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found.")
 
-    if memory.user_id != current_user.id and current_user.email != "rahul@example.com":
+    if memory.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
     chain = memory_service.get_memory_lineage(db, memory_id, user_id=memory.user_id)
@@ -176,12 +164,9 @@ def search_memories(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Retrieves and ranks relevant memories using semantic similarity and the 4-factor formula:
-    final_score = (similarity * 0.60) + (importance * 0.20) + (confidence * 0.10) + (recency * 0.10)
+    Retrieves and ranks relevant memories for the authenticated user using vector search.
     """
-    target_user_id = search_req.user_id or current_user.id
-    if current_user.id != target_user_id and current_user.email != "rahul@example.com":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+    target_user_id = current_user.id
 
     scored_tuples = retrieval_service.search_memories(
         db=db,
@@ -223,9 +208,8 @@ def extract_memories(
 ):
     """
     Extracts structured memory candidates from conversation text using LLM.
-    Optionally stores them directly into the memory bank with deduplication.
     """
-    target_user_id = extract_req.user_id or current_user.id
+    target_user_id = current_user.id
     raw_candidates = llm_service.extract_memories(extract_req.text)
 
     saved_memories = []
@@ -245,22 +229,6 @@ def extract_memories(
             saved_memories.append(MemoryResponse.model_validate(saved))
             if note:
                 action_notes.append(note)
-    elif raw_candidates:
-        # Just return candidate models without storing
-        for item in raw_candidates:
-            mock_resp = MemoryResponse(
-                id="preview",
-                user_id=target_user_id,
-                content=item["content"],
-                memory_type=MemoryType(item.get("memory_type", "fact")),
-                importance_score=float(item.get("importance_score", 0.5)),
-                confidence_score=float(item.get("confidence_score", 0.9)),
-                status=MemoryStatus.ACTIVE,
-                created_at=memory_service.get_user_stats(db, target_user_id) and None or None, # placeholder
-                updated_at=None,
-                last_accessed_at=None
-            )
-            saved_memories.append(mock_resp)
 
     return MemoryExtractResponse(
         memories=saved_memories,

@@ -56,7 +56,7 @@ def test_memory_crud_lifecycle(client, auth_headers):
     # 1. Create Memory
     create_payload = {
         "user_id": user_id,
-        "content": "User prefers concise explanations in all answers.",
+        "content": "User is learning Rust programming language for system tools.",
         "memory_type": "preference",
         "importance_score": 0.90,
         "confidence_score": 0.95

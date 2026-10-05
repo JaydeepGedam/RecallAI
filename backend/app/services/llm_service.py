@@ -50,15 +50,14 @@ class LLMService:
                     "long-term facts, preferences, skills, projects, goals, or events from the user's message.\n\n"
                     "RULES:\n"
                     "1. DO NOT extract transient chit-chat, greetings, or momentary states (e.g. 'I am tired', 'ok', 'hello').\n"
-                    "2. Extract clear, atomic statements written in the third person (e.g., 'User prefers WhatsApp notifications').\n"
+                    "2. Extract clear, atomic statements written in the third person (e.g., 'User prefers WhatsApp notifications', 'User loves football').\n"
                     "3. Assign an importance_score between 0.0 and 1.0:\n"
                     "   - Core tech stack, primary contact preference, critical constraints: 0.8 - 1.0\n"
-                    "   - Minor preferences, general interests: 0.4 - 0.7\n"
+                    "   - Personal preferences, hobbies, general interests: 0.6 - 0.8\n"
                     "   - Temporary or transient mentions: 0.1 - 0.3\n"
                     "4. Assign a confidence_score between 0.0 and 1.0:\n"
-                    "   - Direct explicit statements ('I use React', 'I prefer dark mode'): 0.95 - 1.0\n"
+                    "   - Direct explicit statements ('I love football', 'I use React'): 0.95 - 1.0\n"
                     "   - Probable or qualified statements ('I usually use Python'): 0.75 - 0.90\n"
-                    "   - Uncertain or exploratory statements ('I think I might switch to Vue'): 0.40 - 0.70\n"
                     "5. Choose memory_type strictly from: 'fact', 'preference', 'skill', 'project', 'goal', 'event', 'temporary'.\n"
                     "6. Return ONLY a valid JSON object matching this schema:\n"
                     "   {\n"
@@ -66,7 +65,7 @@ class LLMService:
                     "       {\n"
                     "         \"content\": \"string\",\n"
                     "         \"memory_type\": \"preference\",\n"
-                    "         \"importance_score\": 0.9,\n"
+                    "         \"importance_score\": 0.8,\n"
                     "         \"confidence_score\": 0.95\n"
                     "       }\n"
                     "     ]\n"
@@ -103,18 +102,18 @@ class LLMService:
     def _heuristic_extract(self, text: str) -> List[Dict[str, Any]]:
         """
         Rule-based heuristic extractor used when OpenAI is offline or in demo mode.
-        Recognizes common preference, tech stack, and intent patterns.
+        Recognizes preferences, hobbies, tech stacks, and identity statements.
         """
         memories = []
         lower = text.lower().strip()
 
         # Ignore greetings & trivialities
         trivial_phrases = ["hi", "hello", "hey", "how are you", "what can you do", "thanks", "thank you", "bye", "ok", "cool"]
-        if lower in trivial_phrases or len(lower.split()) < 3:
+        if lower in trivial_phrases or len(lower.split()) < 2:
             return []
 
-        # Backend tech patterns
-        if "backend" in lower and ("using" in lower or "with" in lower or "building" in lower or "moved" in lower or "switched" in lower):
+        # 1. Backend tech stack patterns
+        if "backend" in lower and ("using" in lower or "with" in lower or "building" in lower or "moved" in lower or "switched" in lower or "built" in lower):
             if "fastapi" in lower and "postgresql" in lower:
                 memories.append({
                     "content": "User is building backend using FastAPI and PostgreSQL.",
@@ -137,8 +136,8 @@ class LLMService:
                     "confidence_score": 0.95
                 })
 
-        # Notification preference patterns
-        if "prefer" in lower or "notification" in lower or "contact" in lower:
+        # 2. Notification preference patterns
+        if "prefer" in lower or "notification" in lower or "contact" in lower or "notify" in lower:
             if "whatsapp" in lower:
                 memories.append({
                     "content": "User prefers WhatsApp notifications.",
@@ -154,7 +153,22 @@ class LLMService:
                     "confidence_score": 0.95
                 })
 
-        # Frontend tech patterns
+        # 3. Personal preferences, loves, likes & hobbies
+        # e.g., "i love football", "i like reading books", "i enjoy hiking", "i play guitar"
+        hobby_match = re.search(r"\bi\s+(love|like|really\s+like|enjoy|play|read)\s+([a-zA-Z0-9\s]{3,45})\b", text, re.IGNORECASE)
+        if hobby_match:
+            verb = hobby_match.group(1).lower().strip()
+            item = hobby_match.group(2).strip().rstrip(".!?,")
+            # Map verb to appropriate third-person verb
+            third_person_verb = "loves" if "love" in verb else "enjoys" if "enjoy" in verb else "likes" if "like" in verb else f"{verb}s"
+            memories.append({
+                "content": f"User {third_person_verb} {item}.",
+                "memory_type": MemoryType.PREFERENCE.value,
+                "importance_score": 0.75,
+                "confidence_score": 0.95
+            })
+
+        # 4. Frontend tech patterns
         if "react" in lower and ("work" in lower or "use" in lower or "frontend" in lower):
             memories.append({
                 "content": "User works with React for frontend development.",
@@ -163,7 +177,7 @@ class LLMService:
                 "confidence_score": 0.95
             })
 
-        # Style preference
+        # 5. Explanations & UI preferences
         if "concise" in lower:
             memories.append({
                 "content": "User prefers concise explanations.",
@@ -179,15 +193,15 @@ class LLMService:
                 "confidence_score": 0.95
             })
 
-        # Generic statement catch-all if explicitly stating "I use..." or "I prefer..."
-        if not memories and (lower.startswith("i use ") or lower.startswith("i prefer ") or lower.startswith("i am building ")):
-            statement = text.strip()
-            # Convert first person to third person
+        # 6. Generic first-person declaration catch-all ("I am a...", "I work at...", "I live in...")
+        if not memories and (lower.startswith("i am ") or lower.startswith("i work ") or lower.startswith("i live ")):
+            statement = text.strip().rstrip(".!?")
             statement = re.sub(r"\bI am\b", "User is", statement, flags=re.IGNORECASE)
-            statement = re.sub(r"\bI\b", "User", statement, flags=re.IGNORECASE)
+            statement = re.sub(r"\bI work\b", "User works", statement, flags=re.IGNORECASE)
+            statement = re.sub(r"\bI live\b", "User lives", statement, flags=re.IGNORECASE)
             statement = re.sub(r"\bmy\b", "their", statement, flags=re.IGNORECASE)
             memories.append({
-                "content": statement,
+                "content": f"{statement}.",
                 "memory_type": MemoryType.FACT.value,
                 "importance_score": 0.75,
                 "confidence_score": 0.90
@@ -198,12 +212,6 @@ class LLMService:
     def detect_conflict(self, existing_memory: str, new_memory: str) -> Dict[str, Any]:
         """
         Determines whether a new memory contradicts, replaces, or supersedes an existing memory.
-        Returns:
-        {
-            "is_conflict": bool,
-            "explanation": str,
-            "should_supersede": bool
-        }
         """
         if self.client:
             try:
@@ -211,12 +219,12 @@ class LLMService:
                     "You are a Memory Conflict Resolution Engine. Compare an existing memory with a new memory.\n"
                     "Determine whether the new memory updates, supersedes, or directly contradicts the existing memory.\n\n"
                     "EXAMPLES OF CONFLICT/SUPERSEDING:\n"
-                    "- Existing: 'User prefers email notifications.' vs New: 'User prefers WhatsApp notifications.' -> Conflict (preference changed)\n"
-                    "- Existing: 'User backend is built with FastAPI.' vs New: 'User backend is built with Node.js.' -> Conflict (tech stack updated)\n"
-                    "- Existing: 'User lives in London.' vs New: 'User moved to New York.' -> Conflict (location updated)\n\n"
+                    "- Existing: 'User prefers email notifications.' vs New: 'User prefers WhatsApp notifications.' -> Conflict\n"
+                    "- Existing: 'User backend is built with FastAPI.' vs New: 'User backend is built with Node.js.' -> Conflict\n"
+                    "- Existing: 'User lives in London.' vs New: 'User moved to New York.' -> Conflict\n\n"
                     "EXAMPLES OF NON-CONFLICT:\n"
-                    "- Existing: 'User uses React.' vs New: 'User uses PostgreSQL.' -> No conflict (complementary skills)\n"
-                    "- Existing: 'User likes coffee.' vs New: 'User prefers dark mode.' -> No conflict\n\n"
+                    "- Existing: 'User uses React.' vs New: 'User uses PostgreSQL.' -> No conflict\n"
+                    "- Existing: 'User loves football.' vs New: 'User likes reading books.' -> No conflict\n\n"
                     "Return ONLY valid JSON:\n"
                     "{\n"
                     "  \"is_conflict\": true/false,\n"
@@ -289,7 +297,6 @@ class LLMService:
     ) -> str:
         """
         Generates context-aware chatbot response using retrieved supporting memories.
-        Strictly instructs LLM not to reveal internal scores and prioritize newer memories.
         """
         memories_text = ""
         if retrieved_memories:
@@ -302,12 +309,11 @@ class LLMService:
             "You are RecallAI, an intelligent conversational AI assistant equipped with long-term memory.\n\n"
             f"{memories_text}\n\n"
             "INSTRUCTIONS:\n"
-            "1. Use the supporting memories to personalize your answers and recall facts the user previously shared.\n"
-            "2. Memories are supporting context, not absolute ground truth. If the user explicitly states something new, prefer their current statement.\n"
-            "3. If memories conflict, prefer the newer information.\n"
-            "4. Never invent or hallucinate facts that are not present in memories or current dialogue.\n"
-            "5. NEVER reveal internal memory mechanics, scores (importance, confidence, recency, similarity), or metadata to the user.\n"
-            "6. Keep responses clear, helpful, natural, and friendly."
+            "1. If the user tells you a new fact, hobby, interest, or preference, warmly acknowledge what they just shared.\n"
+            "2. If the user asks a question, answer accurately using any relevant supporting memories.\n"
+            "3. DO NOT randomly bring up unrelated memories (e.g. do not bring up notification channels when talking about sports or books).\n"
+            "4. NEVER reveal internal memory mechanics, scores, or metadata.\n"
+            "5. Keep responses concise, natural, and helpful."
         )
 
         if self.client:
@@ -332,35 +338,70 @@ class LLMService:
         return self._heuristic_chat_response(latest_user_message, retrieved_memories)
 
     def _heuristic_chat_response(self, user_query: str, memories: List[Dict[str, Any]]) -> str:
-        query_low = user_query.lower()
+        query_low = user_query.lower().strip()
 
-        # Check for backend query
+        # 1. Check for backend query ("What backend am I using?")
         if "backend" in query_low:
-            backend_mems = [m for m in memories if "backend" in m.get("content", "").lower() or "node" in m.get("content", "").lower() or "fastapi" in m.get("content", "").lower()]
-            if backend_mems:
-                top_mem = backend_mems[0].get("content", "")
-                text_clean = top_mem
-                for prefix in ["User is building backend using ", "User uses ", "User works with "]:
-                    if text_clean.startswith(prefix):
-                        text_clean = text_clean[len(prefix):]
-                        break
-                return f"You are using {text_clean}"
-            return "I don't have a record of what backend technology you are currently using yet."
+            if "what" in query_low or "which" in query_low or "tell" in query_low or query_low.endswith("?"):
+                backend_mems = [m for m in memories if "backend" in m.get("content", "").lower() or "node" in m.get("content", "").lower() or "fastapi" in m.get("content", "").lower()]
+                if backend_mems:
+                    top_mem = backend_mems[0].get("content", "")
+                    text_clean = top_mem
+                    for prefix in ["User is building backend using ", "User uses ", "User works with "]:
+                        if text_clean.startswith(prefix):
+                            text_clean = text_clean[len(prefix):]
+                            break
+                    return f"You are using {text_clean}"
+                return "I don't have a record of what backend technology you are currently using yet."
+            elif "moved" in query_low or "switched" in query_low:
+                return "Got it! I've updated your backend stack."
+            else:
+                return "Great! I've saved your backend stack in memory."
 
-        # Check for notification query
+        # 2. Check for notification query ("How will you notify me?")
         if "notif" in query_low or "reach" in query_low or "contact" in query_low or "how will you" in query_low:
-            notif_mems = [m for m in memories if "whatsapp" in m.get("content", "").lower() or "email" in m.get("content", "").lower() or "sms" in m.get("content", "").lower()]
-            if notif_mems:
-                top_mem = notif_mems[0].get("content", "")
-                return f"According to your preferences, {top_mem.lower().replace('user prefers', 'I will notify you via')}"
-            return "I don't have a saved preference for your notification channel yet."
+            if "what" in query_low or "how" in query_low or query_low.endswith("?"):
+                notif_mems = [m for m in memories if "whatsapp" in m.get("content", "").lower() or "email" in m.get("content", "").lower() or "sms" in m.get("content", "").lower()]
+                if notif_mems:
+                    top_mem = notif_mems[0].get("content", "")
+                    return f"According to your preferences, {top_mem.lower().replace('user prefers', 'I will notify you via')}"
+                return "I don't have a saved preference for your notification channel yet."
+            else:
+                return "Understood! I've saved your notification preference."
 
+        # 3. Check for hobby / personal interest statements ("i love football", "i like reading books")
+        hobby_match = re.search(r"\bi\s+(love|like|really\s+like|enjoy|play|read)\s+([a-zA-Z0-9\s]{3,45})\b", user_query, re.IGNORECASE)
+        if hobby_match:
+            verb = hobby_match.group(1).lower().strip()
+            item = hobby_match.group(2).strip().rstrip(".!?,")
+            return f"That's great! I've noted down that you {verb} {item}."
+
+        # 4. Check for questions asking what the bot knows or remembers ("what do you know about me?", "what do I like?")
+        if ("what do you" in query_low or "what do i" in query_low or "who am i" in query_low or "remember" in query_low or "what are my" in query_low) and (query_low.endswith("?") or "what" in query_low):
+            if memories:
+                items = []
+                for m in memories[:3]:
+                    text_c = m.get("content", "")
+                    text_c = re.sub(r"^User loves\b", "You love", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User likes\b", "You like", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User enjoys\b", "You enjoy", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User prefers\b", "You prefer", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User uses\b", "You use", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User is\b", "You are", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User works\b", "You work", text_c, flags=re.IGNORECASE)
+                    text_c = re.sub(r"^User\b", "You", text_c, flags=re.IGNORECASE)
+                    items.append(text_c)
+                return "Here is what I remember about you: " + " ".join(items)
+            return "I don't have any specific memories saved about you for that yet."
+
+        # 5. If memories were genuinely retrieved for this topic
         if memories:
             top_mem = memories[0].get("content", "")
-            return f"I remember that {top_mem.lower().replace('user ', 'you ')}. How can I help you today?"
+            # Only use if query shares context
+            return f"Understood! I recall that {top_mem.lower().replace('user ', 'you ')}. How else can I help?"
 
-        return "Got it! Let me know how I can help you with your project."
-
+        # 6. Default natural conversational acknowledgment
+        return "Got it! I've taken note of that. How can I help you today?"
 
 
 llm_service = LLMService()

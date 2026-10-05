@@ -1,24 +1,35 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Memories from './pages/Memories';
-import RetrievalPlayground from './pages/RetrievalPlayground';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Chat from './pages/Chat';
-import Settings from './pages/Settings';
+import Memories from './pages/Memories';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="memories" element={<Memories />} />
-          <Route path="retrieval" element={<RetrievalPlayground />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Authentication Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Protected Application Routes (Simplified to 2 main views) */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route index element={<Navigate to="/chat" replace />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="memories" element={<Memories />} />
+              <Route path="*" element={<Navigate to="/chat" replace />} />
+            </Route>
+          </Route>
+
+          {/* Global Fallback */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
