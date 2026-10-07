@@ -13,7 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { chatApi } from '../services/api';
-import { ChatResponse, ScoredMemory, Memory } from '../types';
+import { ChatResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useChat, ChatTurn } from '../context/ChatContext';
 import FormattedMessage from '../components/FormattedMessage';
