@@ -31,7 +31,9 @@ def init_db() -> None:
     Initializes the database:
     - If running on PostgreSQL, ensures the pgvector extension is installed.
     - Creates all defined tables in the schema.
+    - If PostgreSQL connection fails (e.g. network unreachable), falls back to SQLite.
     """
+    global engine, SessionLocal
     try:
         # Import models so Base has metadata populated
         import app.models  # noqa: F401
@@ -47,8 +49,18 @@ def init_db() -> None:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully.")
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}", exc_info=True)
-        raise e
+        logger.warning(f"Primary PostgreSQL database connection failed: {e}. Falling back to SQLite database.")
+        try:
+            root_dir = Path(__file__).resolve().parents[3]
+            sqlite_db = root_dir / "recallai.db"
+            sqlite_url = f"sqlite:///{sqlite_db.as_posix()}"
+            engine = create_engine(sqlite_url, connect_args={"check_same_thread": False}, pool_pre_ping=True)
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            Base.metadata.create_all(bind=engine)
+            logger.info("Fallback SQLite database initialized successfully.")
+        except Exception as sqlite_err:
+            logger.error(f"Failed to initialize fallback database: {sqlite_err}")
+            raise e
 
 
 def get_db() -> Generator[Session, None, None]:

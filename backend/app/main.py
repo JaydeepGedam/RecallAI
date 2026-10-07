@@ -49,6 +49,9 @@ async def logging_and_timing_middleware(request: Request, call_next):
     """
     Logs API requests with duration and HTTP status, preventing sensitive header leaks.
     """
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     start_time = time.time()
     method = request.method
     path = request.url.path
