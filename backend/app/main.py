@@ -74,8 +74,9 @@ async def logging_and_timing_middleware(request: Request, call_next):
         )
 
 
-# Mount API routers
+# Mount API routers (both with /api prefix and root / prefix for maximum compatibility)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router)
 
 
 @app.get("/")
