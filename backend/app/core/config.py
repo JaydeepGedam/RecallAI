@@ -23,12 +23,7 @@ class Settings(BaseSettings):
     BACKEND_HOST: str = "0.0.0.0"
     BACKEND_PORT: int = 8000
 
-    CORS_ORIGINS: Union[List[str], str] = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000"
-    ]
+    CORS_ORIGINS: Union[List[str], str] = ["*"]
 
     # Database settings (PostgreSQL + pgvector by default)
     # Can fall back to sqlite:///./recallai.db for lightweight local testing
