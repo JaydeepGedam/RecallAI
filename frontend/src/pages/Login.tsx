@@ -50,7 +50,7 @@ export default function Login() {
       await quickDemoLogin();
       navigate('/chat', { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to authenticate demo user.');
+      setError(err.response?.data?.detail || err.message || 'Failed to authenticate demo user.');
     } finally {
       setQuickLoading(false);
     }

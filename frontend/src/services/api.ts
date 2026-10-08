@@ -76,6 +76,9 @@ export const authApi = {
   login: async (email: string, password: string = 'password123') => {
     const res = await api.post('/auth/login', { email, password });
     if (res.data.access_token) {
+      localStorage.setItem('episodic_token', res.data.access_token);
+      localStorage.setItem('episodic_user_id', res.data.user.id);
+      localStorage.setItem('episodic_user_name', res.data.user.name);
       localStorage.setItem('recallai_token', res.data.access_token);
       localStorage.setItem('recallai_user_id', res.data.user.id);
       localStorage.setItem('recallai_user_name', res.data.user.name);
@@ -85,6 +88,9 @@ export const authApi = {
   register: async (email: string, name: string, password: string = 'password123') => {
     const res = await api.post('/auth/register', { email, name, password });
     if (res.data.access_token) {
+      localStorage.setItem('episodic_token', res.data.access_token);
+      localStorage.setItem('episodic_user_id', res.data.user.id);
+      localStorage.setItem('episodic_user_name', res.data.user.name);
       localStorage.setItem('recallai_token', res.data.access_token);
       localStorage.setItem('recallai_user_id', res.data.user.id);
       localStorage.setItem('recallai_user_name', res.data.user.name);
