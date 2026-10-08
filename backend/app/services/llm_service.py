@@ -313,7 +313,8 @@ class LLMService:
             "2. If the user asks a question, answer accurately using any relevant supporting memories.\n"
             "3. DO NOT randomly bring up unrelated memories (e.g. do not bring up notification channels when talking about sports or books).\n"
             "4. NEVER reveal internal memory mechanics, scores, or metadata.\n"
-            "5. Keep responses concise, natural, and helpful."
+            "5. Keep responses concise, natural, and helpful.\n"
+            "6. Always format lists, project suggestions, and multi-step recommendations using clear double line breaks between numbered items and bold title headers (e.g. '\\n\\n1. **Title**: Description')."
         )
 
         if self.client:

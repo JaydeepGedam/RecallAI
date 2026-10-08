@@ -35,10 +35,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS Middleware setup
+# CORS Middleware setup - Allow all domains including Vercel previews & production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["*"],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,6 +50,9 @@ async def logging_and_timing_middleware(request: Request, call_next):
     """
     Logs API requests with duration and HTTP status, preventing sensitive header leaks.
     """
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     start_time = time.time()
     method = request.method
     path = request.url.path
@@ -72,7 +75,7 @@ async def logging_and_timing_middleware(request: Request, call_next):
         )
 
 
-# Mount API routers
+# Mount API routers (both with /api prefix and root / prefix for maximum compatibility)
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(v1_router, prefix="/api/v1")
 

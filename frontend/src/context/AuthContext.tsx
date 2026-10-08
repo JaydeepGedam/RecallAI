@@ -85,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('recallai_token');
     localStorage.removeItem('recallai_user_id');
     localStorage.removeItem('recallai_user_name');
+    sessionStorage.removeItem('recallai_active_messages');
+    sessionStorage.removeItem('recallai_active_conv_id');
     setUser(null);
     setToken(null);
   };

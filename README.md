@@ -30,7 +30,7 @@ EpisodicAI is a high-performance, modular memory infrastructure platform for AI 
                                    |
                                    | REST API (/api) [JWT Bearer]
                                    ↓
-                      FastAPI Backend Service (:8005)
+                      FastAPI Backend Service (:8000)
                                    |
               ┌────────────────────┼────────────────────┐
               ↓                    ↓                    ↓
@@ -61,11 +61,11 @@ EpisodicAI is a high-performance, modular memory infrastructure platform for AI 
 | Service | Port / URL | Description |
 | :--- | :--- | :--- |
 | **Frontend UI** | `http://localhost:5173` | Modern Dark-mode React Dashboard & Chat |
-| **Backend API** | `http://127.0.0.1:8005` | FastAPI service (`/api`) |
-| **Swagger Docs** | `http://127.0.0.1:8005/docs` | OpenAPI Interactive Documentation |
+| **Backend API** | `http://127.0.0.1:8000` | FastAPI service (`/api`) |
+| **Swagger Docs** | `http://127.0.0.1:8000/docs` | OpenAPI Interactive Documentation |
 | **Demo User** | `rahul@example.com` / `password123` | Pre-configured with benchmark memories |
 
-*(Port `8005` is used to prevent collisions with existing Windows port `8000` processes).*
+*(Port `8000` is used to prevent collisions with existing Windows port `8000` processes).*
 
 ---
 
@@ -78,7 +78,7 @@ To launch both backend and frontend servers simultaneously:
 ```
 
 This launches:
-- Backend on `http://127.0.0.1:8005`
+- Backend on `http://127.0.0.1:8000`
 - Frontend on `http://localhost:5173` (with `/api` proxy configured)
 
 ---
@@ -91,7 +91,7 @@ cd backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --app-dir backend --port 8005 --reload
+uvicorn app.main:app --app-dir backend --port 8000 --reload
 ```
 
 ### 2. Frontend Setup
@@ -103,7 +103,7 @@ npm run dev
 
 ### 3. Run Automated Pytest Suite
 ```powershell
-backend\venv\Scripts\pytest backend\tests -v
+backend\.venv\Scripts\pytest backend\tests -v
 ```
 All 10 test suites will verify:
 - Demo seeding & cleanup

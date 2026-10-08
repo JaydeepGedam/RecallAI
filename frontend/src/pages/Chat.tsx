@@ -13,25 +13,16 @@ import {
   Loader2
 } from 'lucide-react';
 import { chatApi } from '../services/api';
-import { ChatResponse, ScoredMemory, Memory } from '../types';
+import { ChatResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
-
-interface ChatTurn {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  retrievedMemories?: ScoredMemory[];
-  extractedMemories?: Memory[];
-  actionNotes?: string[];
-  timestamp: string;
-}
+import { useChat, ChatTurn } from '../context/ChatContext';
+import FormattedMessage from '../components/FormattedMessage';
 
 export default function Chat() {
   const { user } = useAuth();
   const userId = user?.id || '';
-  const [messages, setMessages] = useState<ChatTurn[]>([]);
+  const { messages, conversationId, setMessages, setConversationId, clearChat } = useChat();
   const [input, setInput] = useState('');
-  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [benchmarkRunning, setBenchmarkRunning] = useState(false);
   const [expandedContextIndex, setExpandedContextIndex] = useState<number | null>(null);
@@ -108,8 +99,7 @@ export default function Chat() {
   };
 
   const handleNewChat = () => {
-    setMessages([]);
-    setConversationId(undefined);
+    clearChat();
   };
 
   // Run the full Section 33 Benchmark live in the chat transcript
@@ -242,7 +232,11 @@ export default function Chat() {
                       ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md shadow-indigo-600/20'
                       : 'bg-[#141b2d] border border-slate-800 text-slate-200 rounded-tl-sm shadow-lg'
                   }`}>
-                    {msg.content}
+                    {isUser ? (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    ) : (
+                      <FormattedMessage content={msg.content} />
+                    )}
                   </div>
 
                   {/* Metadata Drawer for Assistant Messages */}
