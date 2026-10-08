@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.db.session import init_db
 from app.api.router import api_router
+from app.api.routes.v1 import v1_router
 
 
 @asynccontextmanager
@@ -15,20 +16,20 @@ async def lifespan(app: FastAPI):
     Application startup and shutdown lifecycle manager.
     Initializes PostgreSQL pgvector extension and creates database schema.
     """
-    logger.info("Initializing RecallAI application...")
+    logger.info("Initializing EpisodicAI application...")
     try:
         init_db()
-        logger.info("RecallAI database schema initialized successfully.")
+        logger.info("EpisodicAI database schema initialized successfully.")
     except Exception as e:
         logger.critical(f"Database initialization failed: {e}", exc_info=True)
     yield
-    logger.info("Shutting down RecallAI application.")
+    logger.info("Shutting down EpisodicAI application.")
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="RecallAI — AI Memory Infrastructure MVP (Engine, Vector Retrieval, API & Dashboard)",
+    description="EpisodicAI — Autonomous Cognitive Memory Infrastructure (Engine, pgvector Retrieval, API & Dashboard)",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc"
@@ -73,6 +74,7 @@ async def logging_and_timing_middleware(request: Request, call_next):
 
 # Mount API routers
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(v1_router, prefix="/api/v1")
 
 
 @app.get("/")

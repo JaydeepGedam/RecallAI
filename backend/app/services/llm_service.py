@@ -46,7 +46,7 @@ class LLMService:
         if self.client:
             try:
                 system_prompt = (
-                    "You are RecallAI's Memory Extraction Engine. Your task is to extract useful, "
+                    "You are EpisodicAI's Memory Extraction Engine. Your task is to extract useful, "
                     "long-term facts, preferences, skills, projects, goals, or events from the user's message.\n\n"
                     "RULES:\n"
                     "1. DO NOT extract transient chit-chat, greetings, or momentary states (e.g. 'I am tired', 'ok', 'hello').\n"
@@ -306,7 +306,7 @@ class LLMService:
             memories_text = "SUPPORTING USER MEMORIES: None available."
 
         system_prompt = (
-            "You are RecallAI, an intelligent conversational AI assistant equipped with long-term memory.\n\n"
+            "You are EpisodicAI, an intelligent conversational AI assistant equipped with persistent episodic memory.\n\n"
             f"{memories_text}\n\n"
             "INSTRUCTIONS:\n"
             "1. If the user tells you a new fact, hobby, interest, or preference, warmly acknowledge what they just shared.\n"

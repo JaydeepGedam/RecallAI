@@ -1,7 +1,7 @@
 import math
 import re
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging import logger
@@ -47,13 +47,15 @@ class RetrievalService:
         user_id: str,
         query: str,
         limit: int = 5,
-        min_score_threshold: float = 0.0
+        min_score_threshold: float = 0.0,
+        tenant_id: Optional[str] = None
     ) -> List[Tuple[Memory, Dict[str, float]]]:
         """
         Performs semantic vector search and multi-factor ranking.
         Only returns memories that demonstrate genuine relevance to the query.
+        Enforces tenant isolation when tenant_id is provided.
         """
-        logger.info(f"Retrieving memories for user={user_id} with query='{query[:50]}...'")
+        logger.info(f"Retrieving memories for user={user_id} (tenant={tenant_id}) with query='{query[:50]}...'")
 
         # Step 1: Generate query embedding
         query_vector = embedding_service.generate_embedding(query)
@@ -64,6 +66,8 @@ class RetrievalService:
             Memory.user_id == user_id,
             Memory.status == MemoryStatus.ACTIVE
         )
+        if tenant_id:
+            candidates_query = candidates_query.filter(Memory.tenant_id == tenant_id)
 
         candidates = candidates_query.all()
         valid_candidates = []

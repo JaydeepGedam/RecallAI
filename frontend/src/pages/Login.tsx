@@ -8,7 +8,9 @@ import {
   Zap, 
   BrainCircuit, 
   AlertCircle,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function Login() {
@@ -17,6 +19,7 @@ export default function Login() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quickLoading, setQuickLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +66,10 @@ export default function Login() {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white font-bold text-xl shadow-lg shadow-indigo-500/25 mb-1">
-            R
+            E
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Recall<span className="text-indigo-400">AI</span>
+            Episodic<span className="text-indigo-400">AI</span>
           </h1>
           <p className="text-xs text-slate-400 font-mono tracking-wide">
             ENTERPRISE AI MEMORY INFRASTRUCTURE
@@ -138,14 +141,24 @@ export default function Login() {
                 </label>
                 <span className="text-[10px] text-slate-400 font-mono">default: password123</span>
               </div>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors font-mono"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2.5 pr-10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button

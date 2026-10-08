@@ -6,7 +6,8 @@ import {
   Sparkles, 
   RotateCcw,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Code2
 } from 'lucide-react';
 import { demoApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -58,6 +59,7 @@ export default function Layout() {
   const navItems = [
     { to: '/chat', label: 'Live Chat & Demo', icon: MessageSquare, badge: 'Hero' },
     { to: '/memories', label: 'Memories Bank', icon: Database },
+    { to: '/integration', label: 'Integration Guide', icon: Code2, badge: 'API' },
   ];
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
@@ -71,11 +73,11 @@ export default function Layout() {
           <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
-                R
+                E
               </div>
               <div>
                 <div className="font-bold text-base tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-                  RecallAI
+                  EpisodicAI
                 </div>
                 <div className="text-[10px] font-mono text-indigo-400 font-semibold tracking-wider">
                   MEMORY INFRASTRUCTURE

@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Chat from './pages/Chat';
 import Memories from './pages/Memories';
+import IntegrationGuide from './pages/IntegrationGuide';
 
 export default function App() {
   return (
@@ -16,12 +17,13 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Protected Application Routes (Simplified to 2 main views) */}
+          {/* Protected Application Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/chat" replace />} />
               <Route path="chat" element={<Chat />} />
               <Route path="memories" element={<Memories />} />
+              <Route path="integration" element={<IntegrationGuide />} />
               <Route path="*" element={<Navigate to="/chat" replace />} />
             </Route>
           </Route>

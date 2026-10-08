@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.api.routes import health, auth, memories, chat, users, demo
+from app.api.routes.v1 import keys
 
 api_router = APIRouter()
 
@@ -10,3 +11,4 @@ api_router.include_router(memories.router)
 api_router.include_router(chat.router)
 api_router.include_router(users.router)
 api_router.include_router(demo.router)
+api_router.include_router(keys.router)

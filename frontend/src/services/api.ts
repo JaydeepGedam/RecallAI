@@ -23,13 +23,19 @@ const api = axios.create({
 
 // Interceptor to attach active auth token & user ID
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('recallai_token');
-  const currentUserId = localStorage.getItem('recallai_user_id');
+  const token = localStorage.getItem('episodic_token') || localStorage.getItem('recallai_token');
+  const currentUserId = localStorage.getItem('episodic_user_id') || localStorage.getItem('recallai_user_id');
   
-  if (token) {
+  // If an Authorization header is already explicitly provided (e.g. custom API key in sandbox), preserve it
+  const hasAuth = Boolean(
+    config.headers?.Authorization || 
+    config.headers?.['Authorization'] || 
+    config.headers?.['authorization']
+  );
+  if (token && !hasAuth) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  if (currentUserId) {
+  if (currentUserId && !config.headers?.['X-User-Id']) {
     config.headers['X-User-Id'] = currentUserId;
   }
   return config;
@@ -39,11 +45,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only redirect to login for general session expiry, NOT when developer is testing sandbox /v1 endpoints
     if (
       error.response?.status === 401 && 
       !window.location.pathname.includes('/login') && 
-      !window.location.pathname.includes('/signup')
+      !window.location.pathname.includes('/signup') &&
+      !error.config?.url?.includes('/v1/')
     ) {
+      localStorage.removeItem('episodic_token');
+      localStorage.removeItem('episodic_user_id');
+      localStorage.removeItem('episodic_user_name');
       localStorage.removeItem('recallai_token');
       localStorage.removeItem('recallai_user_id');
       localStorage.removeItem('recallai_user_name');
@@ -174,6 +185,59 @@ export const demoApi = {
 export const healthApi = {
   check: async (): Promise<HealthStatus> => {
     const res = await api.get<HealthStatus>('/health');
+    return res.data;
+  }
+};
+
+export interface APIKeyItem {
+  id: string;
+  tenant_id: string;
+  name: string;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  is_active: boolean;
+}
+
+export interface APIKeyCreated {
+  id: string;
+  tenant_id: string;
+  name: string;
+  key_prefix: string;
+  api_key: string;
+  created_at: string;
+}
+
+export const apiKeysApi = {
+  list: async (): Promise<APIKeyItem[]> => {
+    const res = await api.get<APIKeyItem[]>('/keys');
+    return res.data;
+  },
+  create: async (name: string): Promise<APIKeyCreated> => {
+    const res = await api.post<APIKeyCreated>('/keys', { name });
+    return res.data;
+  },
+  revoke: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await api.delete(`/keys/${id}`);
+    return res.data;
+  }
+};
+
+export const v1Api = {
+  getContext: async (userId: string, query: string, apiKey?: string, limit: number = 5) => {
+    const config: { headers?: Record<string, string> } = {};
+    if (apiKey && apiKey.trim()) {
+      config.headers = { Authorization: `Bearer ${apiKey.trim()}` };
+    }
+    const res = await api.post('/v1/context', { user_id: userId, query, limit }, config);
+    return res.data;
+  },
+  processMessage: async (userId: string, message: string, apiKey?: string) => {
+    const config: { headers?: Record<string, string> } = {};
+    if (apiKey && apiKey.trim()) {
+      config.headers = { Authorization: `Bearer ${apiKey.trim()}` };
+    }
+    const res = await api.post('/v1/memory/process', { user_id: userId, message }, config);
     return res.data;
   }
 };

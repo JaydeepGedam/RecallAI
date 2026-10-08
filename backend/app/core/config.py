@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     Central application configuration loaded from environment variables and .env file.
     Follows 12-factor app principles and avoids hardcoded secrets.
     """
-    PROJECT_NAME: str = "RecallAI"
+    PROJECT_NAME: str = "EpisodicAI"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api"
     ENVIRONMENT: str = "development"

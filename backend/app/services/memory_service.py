@@ -26,22 +26,29 @@ class MemoryService:
         self,
         db: Session,
         memory_in: MemoryCreate,
-        auto_resolve_conflicts: bool = True
+        auto_resolve_conflicts: bool = True,
+        tenant_id: Optional[str] = None
     ) -> Tuple[Memory, Optional[str]]:
         """
         Creates a new memory after executing deduplication and conflict detection.
         Returns (Memory, action_taken_note: Optional[str])
         """
-        logger.info(f"Processing memory creation for user={memory_in.user_id}: '{memory_in.content[:40]}...'")
+        effective_tenant = tenant_id or getattr(memory_in, "tenant_id", None) or memory_in.user_id
+        logger.info(f"Processing memory creation for user={memory_in.user_id} (tenant={effective_tenant}): '{memory_in.content[:40]}...'")
 
         # Step 1: Generate embedding for incoming memory
         new_embedding = embedding_service.generate_embedding(memory_in.content)
 
-        # Step 2: Fetch existing active memories for this user to check duplicates and conflicts
-        active_memories = db.query(Memory).filter(
+        # Step 2: Fetch existing active memories for this user & tenant to check duplicates and conflicts
+        mem_query = db.query(Memory).filter(
             Memory.user_id == memory_in.user_id,
             Memory.status == MemoryStatus.ACTIVE
-        ).all()
+        )
+        if effective_tenant:
+            mem_query = mem_query.filter(
+                (Memory.tenant_id == effective_tenant) | (Memory.tenant_id.is_(None))
+            )
+        active_memories = mem_query.all()
 
         action_notes = []
 
@@ -76,6 +83,7 @@ class MemoryService:
             # Resolve conflicts if any detected
             if conflicting_memories:
                 new_memory = Memory(
+                    tenant_id=effective_tenant,
                     user_id=memory_in.user_id,
                     content=memory_in.content,
                     memory_type=memory_in.memory_type,
@@ -114,6 +122,7 @@ class MemoryService:
 
         # Standard creation
         new_memory = Memory(
+            tenant_id=effective_tenant,
             user_id=memory_in.user_id,
             content=memory_in.content,
             memory_type=memory_in.memory_type,
@@ -130,13 +139,21 @@ class MemoryService:
         logger.info(f"Successfully stored new active memory id={new_memory.id}")
         return new_memory, None
 
-    def get_memory(self, db: Session, memory_id: str, user_id: Optional[str] = None) -> Optional[Memory]:
+    def get_memory(
+        self,
+        db: Session,
+        memory_id: str,
+        user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None
+    ) -> Optional[Memory]:
         """
-        Retrieves a memory with strict user isolation if user_id is provided.
+        Retrieves a memory with strict user and tenant isolation if provided.
         """
         query = db.query(Memory).filter(Memory.id == memory_id)
         if user_id:
             query = query.filter(Memory.user_id == user_id)
+        if tenant_id:
+            query = query.filter((Memory.tenant_id == tenant_id) | (Memory.tenant_id.is_(None)))
         return query.first()
 
     def list_memories(
@@ -147,12 +164,15 @@ class MemoryService:
         status: Optional[MemoryStatus] = None,
         search: Optional[str] = None,
         skip: int = 0,
-        limit: int = 50
+        limit: int = 50,
+        tenant_id: Optional[str] = None
     ) -> Tuple[List[Memory], int]:
         """
-        Lists memories with filtering, pagination, and count for a specific user.
+        Lists memories with filtering, pagination, and count for a specific user and tenant.
         """
         query = db.query(Memory).filter(Memory.user_id == user_id)
+        if tenant_id:
+            query = query.filter((Memory.tenant_id == tenant_id) | (Memory.tenant_id.is_(None)))
 
         if memory_type:
             query = query.filter(Memory.memory_type == memory_type)

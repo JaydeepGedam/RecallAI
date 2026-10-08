@@ -20,7 +20,7 @@ class User(Base):
 
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
-    memories = relationship("Memory", back_populates="user", cascade="all, delete-orphan")
+    memories = relationship("Memory", foreign_keys="[Memory.tenant_id]", back_populates="tenant", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email}>"

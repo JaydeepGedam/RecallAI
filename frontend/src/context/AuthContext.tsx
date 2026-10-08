@@ -17,21 +17,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('recallai_token'));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem('episodic_token') || localStorage.getItem('recallai_token')
+  );
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('recallai_token');
+      const storedToken = localStorage.getItem('episodic_token') || localStorage.getItem('recallai_token');
       if (storedToken) {
         try {
           const profile = await authApi.getMe();
           setUser(profile);
           setToken(storedToken);
+          localStorage.setItem('episodic_user_id', profile.id);
+          localStorage.setItem('episodic_user_name', profile.name);
           localStorage.setItem('recallai_user_id', profile.id);
           localStorage.setItem('recallai_user_name', profile.name);
         } catch {
           // Token invalid or expired
+          localStorage.removeItem('episodic_token');
+          localStorage.removeItem('episodic_user_id');
+          localStorage.removeItem('episodic_user_name');
           localStorage.removeItem('recallai_token');
           localStorage.removeItem('recallai_user_id');
           localStorage.removeItem('recallai_user_name');
@@ -72,6 +79,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    localStorage.removeItem('episodic_token');
+    localStorage.removeItem('episodic_user_id');
+    localStorage.removeItem('episodic_user_name');
     localStorage.removeItem('recallai_token');
     localStorage.removeItem('recallai_user_id');
     localStorage.removeItem('recallai_user_name');

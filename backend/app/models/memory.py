@@ -34,7 +34,8 @@ class Memory(Base):
     __tablename__ = "memories"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String(255), nullable=False, index=True)
     content = Column(Text, nullable=False)
     
     # Metadata classifications
@@ -69,7 +70,7 @@ class Memory(Base):
     expires_at = Column(DateTime, nullable=True, index=True)
 
     # Relationships
-    user = relationship("User", back_populates="memories")
+    tenant = relationship("User", foreign_keys=[tenant_id], back_populates="memories")
     source_message = relationship("Message", back_populates="extracted_memories")
     superseded_by = relationship("Memory", remote_side=[id], foreign_keys=[superseded_by_id], post_update=True)
 

@@ -45,6 +45,24 @@ def init_db() -> None:
 
         logger.info("Creating database tables if not present...")
         Base.metadata.create_all(bind=engine)
+
+        # Check and add tenant_id to memories table if not present
+        with engine.connect() as conn:
+            try:
+                if engine.dialect.name == "sqlite":
+                    cols = [row[1] for row in conn.execute(text("PRAGMA table_info(memories);")).fetchall()]
+                    if "tenant_id" not in cols:
+                        logger.info("Migrating schema: adding tenant_id column to memories...")
+                        conn.execute(text("ALTER TABLE memories ADD COLUMN tenant_id VARCHAR(36);"))
+                        conn.execute(text("UPDATE memories SET tenant_id = user_id WHERE tenant_id IS NULL;"))
+                        conn.commit()
+                elif engine.dialect.name == "postgresql":
+                    conn.execute(text("ALTER TABLE memories ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36);"))
+                    conn.execute(text("UPDATE memories SET tenant_id = user_id WHERE tenant_id IS NULL;"))
+                    conn.commit()
+            except Exception as mig_err:
+                logger.warning(f"Schema migration note: {mig_err}")
+
         logger.info("Database tables initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}", exc_info=True)

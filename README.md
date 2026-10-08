@@ -1,6 +1,6 @@
-# RecallAI — AI Memory Infrastructure
+# EpisodicAI — Cognitive Memory Infrastructure Platform
 
-RecallAI is a high-performance, modular memory infrastructure platform for AI applications. It empowers autonomous agents and conversational LLMs to automatically extract structured facts, store vector embeddings, perform multi-factor ranked retrieval, and resolve memory conflicts with strict per-user tenant isolation.
+EpisodicAI is a high-performance, modular memory infrastructure platform for AI applications. It empowers autonomous agents and conversational LLMs to automatically extract structured facts, store vector embeddings, perform multi-factor ranked retrieval, and resolve memory conflicts with strict per-user tenant isolation.
 
 ---
 
