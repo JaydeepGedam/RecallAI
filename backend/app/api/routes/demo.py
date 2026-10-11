@@ -85,7 +85,7 @@ def seed_demo_data(
             "days_ago": 5
         },
         {
-            "content": "User is building an AI memory infrastructure project called RecallAI.",
+            "content": "User is building an AI memory infrastructure project called EpisodicAI.",
             "type": MemoryType.PROJECT,
             "importance": 0.95,
             "confidence": 0.99,

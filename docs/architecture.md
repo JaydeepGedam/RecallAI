@@ -1,6 +1,6 @@
-# RecallAI — Architecture & Data Flow
+# EpisodicAI — Architecture & Data Flow
 
-RecallAI is a developer-first memory infrastructure layer built for AI agents and conversational applications.
+EpisodicAI is a developer-first memory infrastructure layer built for AI agents and conversational applications.
 
 ## High-Level Architecture
 

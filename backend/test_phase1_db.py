@@ -1,6 +1,6 @@
 """
 Phase 1 Database Verification Script
-Tests schema creation, table definitions, relationships, and basic insertions for RecallAI.
+Tests schema creation, table definitions, relationships, and basic insertions for EpisodicAI.
 """
 import sys
 from datetime import datetime, timezone
@@ -15,7 +15,7 @@ from app.core.logging import logger
 
 def verify_phase_1():
     print("==================================================")
-    print("RecallAI - Phase 1: Database & Model Verification")
+    print("EpisodicAI - Phase 1: Database & Model Verification")
     print("==================================================")
 
     # Step 1: Initialize database schema

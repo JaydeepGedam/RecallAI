@@ -34,8 +34,8 @@ def setup_logging():
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-    logger = logging.getLogger("recallai")
-    logger.info("RecallAI logging initialized (level: %s)", logging.getLevelName(log_level))
+    logger = logging.getLogger("episodicai")
+    logger.info("EpisodicAI logging initialized (level: %s)", logging.getLevelName(log_level))
     return logger
 
 

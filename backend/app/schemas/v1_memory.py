@@ -111,3 +111,33 @@ class V1LineageItem(BaseModel):
 class V1LineageResponse(BaseModel):
     memory_id: str
     lineage: List[V1LineageItem]
+
+
+# 6. Mode A: Unified All-in-One Chat
+class V1ChatRequest(BaseModel):
+    user_id: str = Field(..., description="External end-user identifier within the tenant")
+    message: str = Field(..., description="User chat message")
+    conversation_id: Optional[str] = Field(None, description="Optional conversation session ID")
+    auto_extract: Optional[bool] = Field(True, description="Whether to extract and store memories automatically")
+
+
+class V1ChatRetrievedItem(BaseModel):
+    id: str
+    content: str
+    type: str
+    score: float
+
+
+class V1ChatExtractedItem(BaseModel):
+    id: str
+    content: str
+    type: str
+
+
+class V1ChatResponse(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    retrieved_memories: List[V1ChatRetrievedItem] = Field(default_factory=list)
+    extracted_memories: List[V1ChatExtractedItem] = Field(default_factory=list)
+    action_notes: List[str] = Field(default_factory=list)
+

@@ -21,13 +21,13 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const STORAGE_KEY_MESSAGES = 'recallai_active_messages';
-const STORAGE_KEY_CONV_ID = 'recallai_active_conv_id';
+const STORAGE_KEY_MESSAGES = 'episodic_active_messages';
+const STORAGE_KEY_CONV_ID = 'episodic_active_conv_id';
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messages, setMessages] = useState<ChatTurn[]>(() => {
     try {
-      const saved = sessionStorage.getItem(STORAGE_KEY_MESSAGES);
+      const saved = sessionStorage.getItem(STORAGE_KEY_MESSAGES) || sessionStorage.getItem('recallai_active_messages');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -36,7 +36,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [conversationId, setConversationId] = useState<string | undefined>(() => {
     try {
-      return sessionStorage.getItem(STORAGE_KEY_CONV_ID) || undefined;
+      return sessionStorage.getItem(STORAGE_KEY_CONV_ID) || sessionStorage.getItem('recallai_active_conv_id') || undefined;
     } catch {
       return undefined;
     }

@@ -1,6 +1,6 @@
 # Database Architecture & pgvector Integration
 
-RecallAI is powered by PostgreSQL with the `pgvector` extension for high-performance vector indexing and exact nearest-neighbor search.
+EpisodicAI is powered by PostgreSQL with the `pgvector` extension for high-performance vector indexing and exact nearest-neighbor search.
 
 ## Entity-Relationship Schema
 
@@ -45,4 +45,4 @@ When running with PostgreSQL:
 1. `init_db()` automatically runs `CREATE EXTENSION IF NOT EXISTS vector;`.
 2. The `embedding` column is defined with `Vector(1536)` matching OpenAI's `text-embedding-3-small`.
 3. Cosine distance queries use the `<=>` operator.
-4. For developer local testing or zero-dependency unit tests, [`app/db/vector_type.py`](file:///c:/Users/jaydeep-vm-new/Documents/RecallAI/backend/app/db/vector_type.py) includes a transparent SQLite JSON fallback that preserves vector operations without crashing.
+4. For developer local testing or zero-dependency unit tests, `app/db/vector_type.py` includes a transparent SQLite JSON fallback that preserves vector operations without crashing.

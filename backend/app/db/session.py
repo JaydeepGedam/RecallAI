@@ -11,10 +11,12 @@ connect_args = {}
 db_url = settings.DATABASE_URL
 if db_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
-    # Ensure relative SQLite path always resolves to the project root recallai.db
+    # Ensure relative SQLite path always resolves to the project root episodicai.db or recallai.db
     if db_url.startswith("sqlite:///./"):
         root_dir = Path(__file__).resolve().parents[3]
-        canonical_db = root_dir / "recallai.db"
+        canonical_db = root_dir / "episodicai.db"
+        if not canonical_db.exists() and (root_dir / "recallai.db").exists():
+            canonical_db = root_dir / "recallai.db"
         db_url = f"sqlite:///{canonical_db.as_posix()}"
 
 engine = create_engine(
@@ -70,7 +72,9 @@ def init_db() -> None:
         logger.warning(f"Primary PostgreSQL database connection failed: {e}. Falling back to SQLite database.")
         try:
             root_dir = Path(__file__).resolve().parents[3]
-            sqlite_db = root_dir / "recallai.db"
+            sqlite_db = root_dir / "episodicai.db"
+            if not sqlite_db.exists() and (root_dir / "recallai.db").exists():
+                sqlite_db = root_dir / "recallai.db"
             sqlite_url = f"sqlite:///{sqlite_db.as_posix()}"
             engine = create_engine(sqlite_url, connect_args={"check_same_thread": False}, pool_pre_ping=True)
             SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -79,6 +83,26 @@ def init_db() -> None:
         except Exception as sqlite_err:
             logger.error(f"Failed to initialize fallback database: {sqlite_err}")
             raise e
+
+    # Ensure demo user Rahul exists
+    try:
+        from app.models.user import User
+        from app.core.security import get_password_hash
+        with SessionLocal() as db:
+            demo_user = db.query(User).filter(User.email == "rahul@example.com").first()
+            if not demo_user:
+                logger.info("Auto-seeding demo user Rahul...")
+                demo_user = User(
+                    email="rahul@example.com",
+                    name="Rahul",
+                    hashed_password=get_password_hash("password123")
+                )
+                db.add(demo_user)
+                db.commit()
+                logger.info("Demo user Rahul created successfully.")
+    except Exception as demo_err:
+        logger.warning(f"Auto-provisioning demo user note: {demo_err}")
+
 
 
 def get_db() -> Generator[Session, None, None]:

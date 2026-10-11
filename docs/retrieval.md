@@ -1,6 +1,6 @@
 # Retrieval & Multi-Factor Ranking
 
-Rather than relying purely on vector similarity (which can return obsolete or trivial memories that happened to share keywords), RecallAI employs a **4-Factor Composite Ranking Formula**.
+Rather than relying purely on vector similarity (which can return obsolete or trivial memories that happened to share keywords), EpisodicAI employs a **4-Factor Composite Ranking Formula**.
 
 ## The Formula
 

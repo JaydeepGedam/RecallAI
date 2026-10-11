@@ -1,11 +1,11 @@
 # Memory System & Lifecycle
 
 ## 1. Memory Types
-Every atomic piece of knowledge extracted by RecallAI belongs to one of the following categories:
+Every atomic piece of knowledge extracted by EpisodicAI belongs to one of the following categories:
 - **`fact`**: Objective information stated by the user (e.g., *"User lives in Seattle"*).
 - **`preference`**: Subjective preference or choice (e.g., *"User prefers WhatsApp notifications"*).
 - **`skill`**: Tech stack, tool, or expertise (e.g., *"User builds backends using FastAPI and PostgreSQL"*).
-- **`project`**: Active initiatives or repositories (e.g., *"User is building RecallAI"*).
+- **`project`**: Active initiatives or repositories (e.g., *"User is building EpisodicAI"*).
 - **`goal`**: Future targets or deadlines (e.g., *"User preparing for launch next month"*).
 - **`event`**: Dated occurrences or milestones.
 - **`temporary`**: Transient context that will expire after a designated TTL (`expires_at`).

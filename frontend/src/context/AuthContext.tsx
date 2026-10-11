@@ -75,7 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const quickDemoLogin = async () => {
-    return login('rahul@example.com', 'password123');
+    try {
+      await login('rahul@example.com', 'password123');
+    } catch {
+      // Auto-register demo user if not present on backend
+      await register('Rahul', 'rahul@example.com', 'password123');
+    }
   };
 
   const logout = () => {
@@ -85,6 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('recallai_token');
     localStorage.removeItem('recallai_user_id');
     localStorage.removeItem('recallai_user_name');
+    sessionStorage.removeItem('episodic_active_messages');
+    sessionStorage.removeItem('episodic_active_conv_id');
     sessionStorage.removeItem('recallai_active_messages');
     sessionStorage.removeItem('recallai_active_conv_id');
     setUser(null);

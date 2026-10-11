@@ -30,7 +30,7 @@ def chat_interaction(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Demonstrates the complete end-to-end RecallAI memory lifecycle:
+    Demonstrates the complete end-to-end EpisodicAI memory lifecycle:
     1. User message is recorded.
     2. Relevant active memories are retrieved and ranked.
     3. Contextual assistant response is generated using the retrieved memories.

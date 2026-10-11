@@ -7,7 +7,7 @@ from app.db.base import Base
 
 class User(Base):
     """
-    User model representing an account/tenant in RecallAI.
+    User model representing an account/tenant in EpisodicAI.
     Ensures strict tenant data isolation for all memories and conversations.
     """
     __tablename__ = "users"

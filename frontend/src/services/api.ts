@@ -234,6 +234,19 @@ export const apiKeysApi = {
 };
 
 export const v1Api = {
+  chat: async (userId: string, message: string, apiKey?: string, conversationId?: string) => {
+    const config: { headers?: Record<string, string> } = {};
+    if (apiKey && apiKey.trim()) {
+      config.headers = { Authorization: `Bearer ${apiKey.trim()}` };
+    }
+    const res = await api.post('/v1/chat', { 
+      user_id: userId, 
+      message, 
+      conversation_id: conversationId,
+      auto_extract: true 
+    }, config);
+    return res.data;
+  },
   getContext: async (userId: string, query: string, apiKey?: string, limit: number = 5) => {
     const config: { headers?: Record<string, string> } = {};
     if (apiKey && apiKey.trim()) {

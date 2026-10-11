@@ -174,3 +174,44 @@ def test_cross_tenant_isolation(client, db):
     )
     assert res_b.status_code == 200
     assert len(res_b.json()["context"]) == 0, "Security Violation: Tenant B accessed Tenant A's memories!"
+
+
+def test_v1_unified_chat_mode_a(client, tenant_fixture):
+    """
+    Tests Mode A: 1-Call Unified Chat API (/api/v1/chat).
+    External app calls 1 endpoint with API key and gets assistant reply + memory tracking.
+    """
+    raw_key = tenant_fixture["api_key"]
+    headers = {"Authorization": f"Bearer {raw_key}"}
+    user_id = f"unified_{uuid.uuid4().hex[:8]}"
+
+    # Turn 1: State fact
+    res1 = client.post(
+        "/api/v1/chat",
+        headers=headers,
+        json={
+            "user_id": user_id,
+            "message": "My primary programming language is Python and I like dark mode."
+        }
+    )
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "message" in data1
+    assert "conversation_id" in data1
+    assert len(data1["extracted_memories"]) >= 1
+
+    # Turn 2: Query fact in same user space
+    res2 = client.post(
+        "/api/v1/chat",
+        headers=headers,
+        json={
+            "user_id": user_id,
+            "message": "What programming language do I prefer?"
+        }
+    )
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert "message" in data2
+    assert len(data2["retrieved_memories"]) >= 1
+    assert any("python" in m["content"].lower() for m in data2["retrieved_memories"])
+

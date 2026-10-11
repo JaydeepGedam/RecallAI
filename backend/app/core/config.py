@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Union[List[str], str] = ["*"]
 
     # Database settings (PostgreSQL + pgvector by default)
-    # Can fall back to sqlite:///./recallai.db for lightweight local testing
-    DATABASE_URL: str = "sqlite:///./recallai.db"
+    # Can fall back to sqlite:///./episodicai.db for lightweight local testing
+    DATABASE_URL: str = "sqlite:///./episodicai.db"
 
     # OpenAI API Configuration
     OPENAI_API_KEY: str = ""
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSIONS: int = 1536
 
     # Security & Authentication
-    JWT_SECRET: str = "recallai_insecure_default_secret_key_change_me"
+    JWT_SECRET: str = "episodicai_insecure_default_secret_key_change_me"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
